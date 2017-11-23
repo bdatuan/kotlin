@@ -69,16 +69,20 @@ class CodeInliner<TCallElement : KtElement>(
         val assignment = (qualifiedElement as? KtExpression)
                 ?.getAssignmentByLHS()
                 ?.takeIf { it.operationToken == KtTokens.EQ }
-        val elementToBeReplaced = assignment ?: qualifiedElement
         val callableForParameters = if (assignment != null && descriptor is PropertyDescriptor)
-            descriptor.setter ?: descriptor
+            descriptor.setter?.takeIf { !it.isDefault } ?: descriptor
         else
             descriptor
+        val elementToBeReplaced = when {
+            assignment != null -> if (callableForParameters is PropertySetterDescriptor) assignment else qualifiedElement
+            else -> qualifiedElement
+        }
 
         val commentSaver = CommentSaver(elementToBeReplaced, saveLineBreaks = true)
 
         // if the value to be inlined is not used and has no side effects we may drop it
         if (codeToInline.mainExpression != null
+            && assignment == null
             && elementToBeReplaced is KtExpression
             && !elementToBeReplaced.isUsedAsExpression(bindingContext)
             && !codeToInline.mainExpression.shouldKeepValue(usageCount = 0)
