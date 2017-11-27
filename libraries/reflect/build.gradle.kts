@@ -204,8 +204,10 @@ val sourcesJar = sourcesJar(sourceSet = null) {
     from("$core/reflection.jvm/src")
 }
 
+val result = proguard
+
 val dexMethodCount by task<DexMethodCount> {
-    dependsOn(proguard)
+    dependsOn(result)
     jarFile = File(outputJarPath)
     ownPackages = listOf("kotlin.reflect")
 }
@@ -214,7 +216,7 @@ tasks.getByName("check").dependsOn(dexMethodCount)
 artifacts {
     val artifactJar = mapOf(
             "file" to File(outputJarPath),
-            "builtBy" to proguard,
+            "builtBy" to result,
             "name" to property("archivesBaseName")
     )
 
@@ -225,6 +227,6 @@ artifacts {
 
 javadocJar()
 
-dist(fromTask = proguard) {
+dist(fromTask = result) {
     from(sourcesJar)
 }
